@@ -1,11 +1,11 @@
-# get_popnwiki — pop'n music 点灯追踪工具
+# popn-lamp-recorder — pop'n music 点灯追踪工具
 
 记录你在 [pop'n music](https://p.eagate.573.jp/game/popn/) 中每首曲子的通关状态（点灯），支持按等级/难易度/代数/点灯状态筛选、本地持久化，以及数据备份恢复。
 
 ## 项目结构
 
 ```
-get_popnwiki/
+popn-lamp-recorder/
 ├── scraper/          # Python 爬虫，从 popn.wiki 抓取难易度表
 ├── data/             # 爬虫输出的原始数据（JSON / CSV）
 └── popn-tracker/     # Vue 3 前端 PWA，点灯追踪主体
@@ -220,3 +220,5 @@ python scraper.py
 - `popn-tracker/public/popn_difficulty_table.json` — 前端静态资源（直接生效，无需手动复制）
 
 > 爬虫内置 1.5～4 秒随机延迟防风控，完整爬取 Lv29～Lv50 约需 **3～5 分钟**。
+
+## 本项目全程 vibe coding 完成，并且主要用于自用，不会主动修复bug，请谅解！
