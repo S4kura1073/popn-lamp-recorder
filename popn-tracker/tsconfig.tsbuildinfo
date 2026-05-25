@@ -1,0 +1,1 @@
+{"root":["./src/main.ts","./src/constants/lamp.ts","./src/stores/user.ts","./src/types/index.ts","./src/utils/song.ts","./src/app.vue","./src/components/filterbar.vue","./src/components/importexport.vue","./src/components/lamppicker.vue","./src/components/songcard.vue","./src/components/virtuallist.vue","./env.d.ts"],"version":"5.7.3"}
