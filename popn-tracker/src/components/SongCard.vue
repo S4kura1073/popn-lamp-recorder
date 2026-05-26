@@ -56,6 +56,7 @@ function onPickerSelect(status: LampStatus) {
         <span class="tag lv"><em>Lv</em>{{ song['Lv'] }}</span>
         <span class="tag gen"><em>代数</em>{{ song['代数'] }}</span>
         <span class="tag diff"><em>難易度</em>{{ diffCategory }}</span>
+        <span v-if="song['bpm']" class="tag bpm"><em>BPM</em>{{ song['bpm'] }}</span>
         <span v-if="song['Notes']" class="tag notes"><em>Notes</em>{{ song['Notes'] }}</span>
       </div>
     </div>
@@ -152,5 +153,9 @@ function onPickerSelect(status: LampStatus) {
 .tag.notes {
   background: #1a2e1a;
   color: #86efac;
+}
+.tag.bpm {
+  background: #2d1f0e;
+  color: #fb923c;
 }
 </style>
