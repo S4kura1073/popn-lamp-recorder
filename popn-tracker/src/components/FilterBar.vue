@@ -4,14 +4,16 @@ import { extractDiffCategory } from '../utils/song'
 import { LAMP_LABELS, LAMP_STATUSES } from '../constants/lamp'
 import { computed, ref, onMounted } from 'vue'
 
-const props = defineProps<{
+const props = withDefaults(defineProps<{
   songs: SongRecord[]
   modelLv: string
   modelDiff: string
   modelGen: string
   modelLamp: string
-  modelSearch: string
-}>()
+  modelSearch?: string
+}>(), {
+  modelSearch: '',
+})
 
 const emit = defineEmits<{
   'update:modelLv': [v: string]
@@ -41,8 +43,13 @@ const lvOptions = computed(() => {
 })
 
 const diffOptions = computed(() => {
-  const set = new Set(props.songs.map(s => extractDiffCategory(s['難易度'])))
-  return ['', ...Array.from(set).sort()]
+  if (!props.modelLv) return []
+  const set = new Set(
+    props.songs
+      .filter(s => s['Lv'] === props.modelLv)
+      .map(s => extractDiffCategory(s['難易度']))
+  )
+  return Array.from(set).sort()
 })
 
 const genOptions = computed(() => {
@@ -76,7 +83,10 @@ const lampOptions = [
   <div class="filter-bar">
     <select
       :value="modelLv"
-      @change="emit('update:modelLv', ($event.target as HTMLSelectElement).value)"
+      @change="(e) => {
+        emit('update:modelLv', (e.target as HTMLSelectElement).value)
+        emit('update:modelDiff', '')
+      }"
     >
       <option value="">Lv: 全部</option>
       <option v-for="lv in lvOptions" :key="lv" :value="lv">Lv{{ lv }}</option>
@@ -84,9 +94,10 @@ const lampOptions = [
 
     <select
       :value="modelDiff"
+      :disabled="!modelLv"
       @change="emit('update:modelDiff', ($event.target as HTMLSelectElement).value)"
     >
-      <option value="">難易度: 全部</option>
+      <option value="">難易度: {{ modelLv ? '全部' : '—' }}</option>
       <option v-for="d in diffOptions" :key="d" :value="d">{{ d }}</option>
     </select>
 
@@ -142,6 +153,10 @@ const lampOptions = [
 .filter-bar select:focus {
   outline: 2px solid #38bdf8;
   outline-offset: -1px;
+}
+.filter-bar select:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
 }
 .search-input {
   grid-column: 1 / -1;
