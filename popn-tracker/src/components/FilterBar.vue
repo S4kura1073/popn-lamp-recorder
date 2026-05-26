@@ -9,6 +9,7 @@ const props = defineProps<{
   modelDiff: string
   modelGen: string
   modelLamp: string
+  modelSearch: string
 }>()
 
 const emit = defineEmits<{
@@ -16,6 +17,7 @@ const emit = defineEmits<{
   'update:modelDiff': [v: string]
   'update:modelGen': [v: string]
   'update:modelLamp': [v: string]
+  'update:modelSearch': [v: string]
 }>()
 
 // 动态提取可选项
@@ -82,6 +84,14 @@ const lampOptions = [
         点灯: {{ opt.label }}
       </option>
     </select>
+
+    <input
+      class="search-input"
+      type="search"
+      placeholder="搜索曲名..."
+      :value="modelSearch"
+      @input="emit('update:modelSearch', ($event.target as HTMLInputElement).value)"
+    />
   </div>
 </template>
 
@@ -108,6 +118,23 @@ const lampOptions = [
   padding-right: 24px;
 }
 .filter-bar select:focus {
+  outline: 2px solid #38bdf8;
+  outline-offset: -1px;
+}
+.search-input {
+  grid-column: 1 / -1;
+  width: 100%;
+  padding: 7px 10px;
+  border-radius: 6px;
+  border: 1px solid #334155;
+  background: #0f172a;
+  color: #e2e8f0;
+  font-size: 13px;
+}
+.search-input::placeholder {
+  color: #475569;
+}
+.search-input:focus {
   outline: 2px solid #38bdf8;
   outline-offset: -1px;
 }

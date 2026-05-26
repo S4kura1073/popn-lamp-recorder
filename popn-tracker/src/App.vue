@@ -15,6 +15,7 @@ const filterLv = ref('')
 const filterDiff = ref('')
 const filterGen = ref('')
 const filterLamp = ref('')
+const filterSearch = ref('')
 
 // 加载曲目数据
 onMounted(() => {
@@ -23,6 +24,7 @@ onMounted(() => {
 
 // 筛选逻辑
 const filteredSongs = computed(() => {
+  const keyword = filterSearch.value.trim().toLowerCase()
   return store.songs.filter(song => {
     if (filterLv.value && song['Lv'] !== filterLv.value) return false
     if (filterDiff.value && extractDiffCategory(song['難易度']) !== filterDiff.value) return false
@@ -32,6 +34,7 @@ const filteredSongs = computed(() => {
       const target = +filterLamp.value as LampStatus
       if (lamp !== target) return false
     }
+    if (keyword && !song['曲名'].toLowerCase().includes(keyword)) return false
     return true
   })
 })
@@ -58,6 +61,7 @@ const statsDisplay = computed(() => {
       v-model:model-diff="filterDiff"
       v-model:model-gen="filterGen"
       v-model:model-lamp="filterLamp"
+      v-model:model-search="filterSearch"
     />
 
     <div class="result-count">
