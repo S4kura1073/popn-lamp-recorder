@@ -1,6 +1,6 @@
 # popn-lamp-recorder — pop'n music 点灯追踪工具
 
-## 项目已成功部署在[popn-lamp-recorder](https://popn-lamp-recorder.netlify.app/) 直接前往链接把那个保存为PWA即可使用
+## 项目已成功部署在[popn-lamp-recorder](https://popn-lamp-recorder.netlify.app/) 直接前往链接保存为PWA即可使用
 
 记录你在 [pop'n music](https://p.eagate.573.jp/game/popn/) 中每首曲子的通关状态（点灯），支持按等级/难易度/代数/点灯状态筛选、本地持久化，以及数据备份恢复。
 
