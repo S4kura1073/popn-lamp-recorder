@@ -2,6 +2,7 @@
 import type { SongRecord } from '../types'
 import { extractDiffCategory } from '../utils/song'
 import { LAMP_LABELS, LAMP_STATUSES } from '../constants/lamp'
+import { computed, ref, onMounted } from 'vue'
 
 const props = defineProps<{
   songs: SongRecord[]
@@ -20,9 +21,20 @@ const emit = defineEmits<{
   'update:modelSearch': [v: string]
 }>()
 
-// 动态提取可选项
-import { computed } from 'vue'
+// 从 popn_version.json 加载代数排序，后续直接编辑该文件即可维护顺序
+const versionOrder = ref<string[]>([])
 
+onMounted(async () => {
+  try {
+    const res = await fetch('/popn_version.json')
+    const data: Record<string, string> = await res.json()
+    versionOrder.value = Object.keys(data)
+  } catch (e) {
+    console.warn('Failed to load popn_version.json', e)
+  }
+})
+
+// 动态提取可选项
 const lvOptions = computed(() => {
   const set = new Set(props.songs.map(s => s['Lv']))
   return ['', ...Array.from(set).sort((a, b) => +a - +b)]
@@ -34,10 +46,20 @@ const diffOptions = computed(() => {
 })
 
 const genOptions = computed(() => {
-  const set = new Set(props.songs.map(s => s['代数']))
+  const existingSet = new Set(props.songs.map(s => s['代数']))
+
+  if (versionOrder.value.length > 0) {
+    // 按 popn_version.json 的 key 顺序排列，只保留数据中实际存在的代数
+    const ordered = versionOrder.value.filter(k => existingSet.has(k))
+    // 将数据中有但 version 文件未收录的代数追加到末尾
+    const extra = Array.from(existingSet).filter(v => !versionOrder.value.includes(v)).sort()
+    return ['', ...ordered, ...extra]
+  }
+
+  // 降级：version 文件未加载时的原始排序
   const nums: string[] = []
   const others: string[] = []
-  set.forEach(v => { /^\d+$/.test(v) ? nums.push(v) : others.push(v) })
+  existingSet.forEach(v => { /^\d+$/.test(v) ? nums.push(v) : others.push(v) })
   nums.sort((a, b) => +a - +b)
   others.sort()
   return ['', ...nums, ...others]
