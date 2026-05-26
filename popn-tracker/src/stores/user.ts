@@ -6,8 +6,6 @@ import {
   LAMP_STATUS_MIN,
   LAMP_STATUS_MAX,
   LAMP_STATUS_COUNT,
-  DATA_VERSION,
-  LEGACY_LAMP_MAX,
 } from '../constants/lamp'
 
 export const useUserStore = defineStore('user', () => {
@@ -61,10 +59,8 @@ export const useUserStore = defineStore('user', () => {
   })
 
   // ---- 数据备份与恢复 ----
-  // 导出格式: { [SongKey]: LampStatus, "__version": DATA_VERSION }
   function exportData(): string {
-    const payload = { ...lampMap.value, __version: DATA_VERSION }
-    return JSON.stringify(payload, null, 2)
+    return JSON.stringify(lampMap.value, null, 2)
   }
 
   function importData(jsonStr: string) {
@@ -72,19 +68,12 @@ export const useUserStore = defineStore('user', () => {
       const data = JSON.parse(jsonStr)
       if (typeof data !== 'object' || data === null) throw new Error()
 
-      const version = data.__version as number | undefined
-      const entries = Object.entries(data).filter(([k]) => k !== '__version')
-
       const newMap: Record<SongKey, LampStatus> = {}
-      for (const [key, val] of entries) {
+      for (const [key, val] of Object.entries(data)) {
+        if (key === '__version') continue
         const n = Number(val)
-        if (!Number.isInteger(n)) continue
-        if (version === DATA_VERSION) {
-          // 当前版本: 直接验证范围
-          if (n >= LAMP_STATUS_MIN && n <= LAMP_STATUS_MAX) newMap[key] = n as LampStatus
-        } else {
-          // 旧版本迁移: 旧 0=Failed→1, 旧 1=NormalClear→2, 旧 2=FullCombo→3, 旧 3=Perfect→4
-          if (n >= LAMP_STATUS_MIN && n <= LEGACY_LAMP_MAX) newMap[key] = (n + 1) as LampStatus
+        if (Number.isInteger(n) && n >= LAMP_STATUS_MIN && n <= LAMP_STATUS_MAX) {
+          newMap[key] = n as LampStatus
         }
       }
       lampMap.value = newMap
@@ -108,29 +97,5 @@ export const useUserStore = defineStore('user', () => {
 }, {
   persist: {
     pick: ['lampMap'],
-    // localStorage 恢复后自动迁移旧版本数据 (v1: 0-3 → v2: 1-4)
-    afterHydrate(ctx: import('pinia').PiniaPluginContext) {
-      const map = ctx.store.lampMap as Record<SongKey, number>
-      let needsMigration = false
-      for (const val of Object.values(map)) {
-        // 旧版本数据最大为 LEGACY_LAMP_MAX(3)，新版本最大为 LAMP_STATUS_MAX(4)
-        // 旧版本无 NoPlay 概念，所有存在的值均 >= 1
-        if (val > LAMP_STATUS_MIN && val <= LEGACY_LAMP_MAX) { needsMigration = true; break }
-      }
-      if (needsMigration) {
-        const migrated: Record<SongKey, LampStatus> = {}
-        for (const [key, val] of Object.entries(map)) {
-          const n = Number(val)
-          // 旧版本 1-3 全部加一；旧版本的 0 (Failed) 映射到新版本 1 (Failed)
-          if (n > LAMP_STATUS_MIN && n <= LEGACY_LAMP_MAX)
-            migrated[key] = (n + 1) as LampStatus
-          else if (n === LAMP_STATUS_MIN)
-            migrated[key] = 1 as LampStatus  // 旧 Failed(0) → 新 Failed(1)
-          else
-            migrated[key] = n as LampStatus
-        }
-        ctx.store.lampMap = migrated
-      }
-    },
   },
 })

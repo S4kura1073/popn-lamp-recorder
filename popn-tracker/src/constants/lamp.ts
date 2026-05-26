@@ -9,10 +9,6 @@ export const LAMP_STATUSES: LampStatus[] = [0, 1, 2, 3, 4]
 /** 状态总数 */
 export const LAMP_STATUS_COUNT = LAMP_STATUSES.length
 
-/** 导出文件版本号（每次点灯状态体系升级时递增） */
-export const DATA_VERSION = 2
-/** 旧版本 (v1) 点灯状态范围上限（旧版本无 NoPlay，取值 0-3） */
-export const LEGACY_LAMP_MAX = 3
 /** 导出备份文件名前缀 */
 export const EXPORT_FILE_PREFIX = 'popn-tracker-backup'
 
