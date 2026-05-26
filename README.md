@@ -223,4 +223,33 @@ python scraper.py
 
 > 爬虫内置 1.5～4 秒随机延迟防风控，完整爬取 Lv29～Lv50 约需 **3～5 分钟**。
 
+### CLI 参数
+
+```bash
+# 只爬取指定等级（如 Lv38）
+python scraper.py --level 38
+
+# 爬取后执行数据质量校验
+python scraper.py --validate
+
+# 只打印结果，不写入文件（调试用）
+python scraper.py --dry-run
+
+# 组合使用
+python scraper.py --level 38 --validate --dry-run
+```
+
+### 数据质量校验
+
+`--validate` 会自动检测以下异常，帮助发现 wiki 表格格式变更或解析错误：
+
+- **难易度为纯数字**：字段错位特征（如难易度变成 Notes 数值）
+- **BPM 包含汉字**：字段错位特征（如曲名串到 BPM 列）
+- **曲名含难度后缀但ジャンル名为空**：7 列/8 列格式误判
+- **必填字段缺失**：曲名或 Lv 为空
+
+### 代数排序维护
+
+前端代数筛选列表的顺序由 `popn-tracker/public/popn_version.json` 决定。出新代数时，直接在该 JSON 文件中按期望顺序追加新的 key 即可，value 可以留空。爬虫无需修改。
+
 ## 本项目全程 vibe coding 完成，以自用为主，不会主动修复bug，请谅解！
