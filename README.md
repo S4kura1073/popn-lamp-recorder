@@ -1,5 +1,7 @@
 # popn-lamp-recorder — pop'n music 点灯追踪工具
 
+## 项目已成功部署在[popn-lamp-recorder](https://popn-lamp-recorder.netlify.app/) 直接前往链接把那个保存为PWA即可使用
+
 记录你在 [pop'n music](https://p.eagate.573.jp/game/popn/) 中每首曲子的通关状态（点灯），支持按等级/难易度/代数/点灯状态筛选、本地持久化，以及数据备份恢复。
 
 ## 项目结构
@@ -221,4 +223,4 @@ python scraper.py
 
 > 爬虫内置 1.5～4 秒随机延迟防风控，完整爬取 Lv29～Lv50 约需 **3～5 分钟**。
 
-## 本项目全程 vibe coding 完成，并且主要用于自用，不会主动修复bug，请谅解！
+## 本项目全程 vibe coding 完成，以自用为主，不会主动修复bug，请谅解！
