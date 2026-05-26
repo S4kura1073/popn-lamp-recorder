@@ -6,6 +6,7 @@
   - popn-tracker/public/popn_difficulty_table.json  前端静态资源（自动同步）
 """
 
+import argparse
 import json
 import logging
 import os
@@ -141,24 +142,20 @@ def _is_marker_cell(cell: str) -> bool:
 
 def normalize_row(row: list[str], level: int) -> dict | None:
     """将任意列数的原始行统一为字典，列数不匹配则返回 None"""
-    # 记录原始列数（用于判断是否为 8 列被裁）
-    original_col_count = len(row)
-
-    # 去除末尾空列
-    while row and row[-1].strip() == "":
+    # 只去除超出 8 列的多余空列（表格可能包含尾部空单元格，但不能把難易度空列也 pop 掉）
+    while len(row) > 8 and row[-1].strip() == "":
         row.pop()
 
     col_count = len(row)
 
-    # 实际区分方法：只要原始列数是 8，就按标准 8 列处理；其余按实际列数处理
-    if original_col_count == 8:
+    if col_count == 8:
         indices = COLUMN_MAP[8]
         fields = [clean_cell(row[i]) if i < len(row) else "" for i in indices]
         values = [str(level), extract_bracketed(fields[0]), extract_bracketed(fields[1]), *fields[2:]]
         return dict(zip(FIELDS, values))
 
     if col_count not in COLUMN_MAP:
-        logger.warning(f"Lv{level}: 跳过列数异常行({col_count}列, 原始{original_col_count}列)")
+        logger.warning(f"Lv{level}: 跳过列数异常行({col_count}列)")
         return None
 
     indices = COLUMN_MAP[col_count]
@@ -170,6 +167,37 @@ def normalize_row(row: list[str], level: int) -> dict | None:
 def process_rows(level: int, raw_rows: list[list[str]]) -> list[dict]:
     """批量处理行"""
     return [nr for row in raw_rows if (nr := normalize_row(row, level))]
+
+
+def validate_data(data: list[dict]) -> list[str]:
+    """数据质量校验：返回所有异常描述"""
+    issues = []
+    for i, row in enumerate(data):
+        lv = row.get("Lv", "?")
+        title = row.get("曲名", "?")
+
+        # 必填字段缺失
+        if not row.get("曲名"):
+            issues.append(f"第{i+1}行 Lv{lv}: 曲名为空")
+        if not row.get("Lv"):
+            issues.append(f"第{i+1}行: Lv为空")
+
+        # 难易度为纯数字（字段错位特征）
+        diff = row.get("難易度", "").strip()
+        if diff and diff.isdigit():
+            issues.append(f"第{i+1}行 Lv{lv} {title}: 难易度为纯数字 '{diff}'（疑似字段错位）")
+
+        # BPM 异常：如果 BPM 字段包含日文汉字，大概率是字段错位
+        bpm = row.get("bpm", "").strip()
+        if bpm and re.search(r'[\u4e00-\u9fff]', bpm):
+            issues.append(f"第{i+1}行 Lv{lv} {title}: BPM 包含汉字 '{bpm}'（疑似字段错位）")
+
+        # 曲名包含 (H)/(EX)/(N) 但 ジャンル名 为空（可能是 7 列格式误判）
+        genre = row.get("ジャンル名(タイプ)", "").strip()
+        if not genre and re.search(r'\([HENCX]+\)$', title):
+            issues.append(f"第{i+1}行 Lv{lv} {title}: ジャンル名为空但曲名含难度后缀（疑似字段错位）")
+
+    return issues
 
 
 def write_json(path: str, data: list[dict]) -> None:
@@ -184,12 +212,19 @@ def write_json(path: str, data: list[dict]) -> None:
 # 主流程
 # ============================================================
 def main():
-    logger.info(f"popn.wiki 难易度表爬虫 | Lv{LEVELS[0]} ~ Lv{LEVELS[-1]}")
+    parser = argparse.ArgumentParser(description="popn.wiki 难易度表爬虫")
+    parser.add_argument("--level", type=int, metavar="N", help="只爬取指定等级（如 --level 38）")
+    parser.add_argument("--validate", action="store_true", help="爬取后执行数据质量校验")
+    parser.add_argument("--dry-run", action="store_true", help="只打印结果，不写入文件")
+    args = parser.parse_args()
+
+    levels = [args.level] if args.level else LEVELS
+    logger.info(f"popn.wiki 难易度表爬虫 | Lv{levels[0]} ~ Lv{levels[-1]}")
 
     session = create_session()
     all_rows = []
 
-    for level in LEVELS:
+    for level in levels:
         data = fetch_level_data(session, level)
         if not data or not data.get("body"):
             logger.warning(f"Lv{level}: 跳过（无数据）")
@@ -204,15 +239,27 @@ def main():
         logger.error("未获取到任何数据，退出")
         sys.exit(1)
 
-    # 同时写入 data/ 和前端 public/
-    logger.info(f"共 {len(all_rows)} 条记录，写入以下路径：")
-    write_json(JSON_PATH, all_rows)
-    write_json(FRONTEND_PUBLIC_PATH, all_rows)
+    # 数据质量校验
+    if args.validate:
+        issues = validate_data(all_rows)
+        if issues:
+            logger.warning("数据校验发现以下异常：")
+            for issue in issues:
+                logger.warning(f"  ! {issue}")
+        else:
+            logger.info("数据校验通过，未发现异常")
 
-    # 统计输出
-    counts = Counter(row["Lv"] for row in all_rows)
-    for lv in sorted(counts, key=int):
-        logger.info(f"  Lv{lv}: {counts[lv]} 条")
+    # 写入
+    if not args.dry_run:
+        logger.info(f"共 {len(all_rows)} 条记录，写入以下路径：")
+        write_json(JSON_PATH, all_rows)
+        write_json(FRONTEND_PUBLIC_PATH, all_rows)
+
+        counts = Counter(row["Lv"] for row in all_rows)
+        for lv in sorted(counts, key=int):
+            logger.info(f"  Lv{lv}: {counts[lv]} 条")
+    else:
+        logger.info(f"DRY RUN: 共 {len(all_rows)} 条记录，未写入文件")
 
 
 if __name__ == "__main__":
